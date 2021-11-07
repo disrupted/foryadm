@@ -62,9 +62,9 @@ foryadm::add() {
     [[ $# -ne 0 ]] && yadm add "$@" && yadm status -s --untracked=normal && return
 
     local changed unmerged untracked files opts preview extract
-    changed=$(yadm config --get-color color.status.changed red)
-    unmerged=$(yadm config --get-color color.status.unmerged red)
-    untracked=$(yadm config --get-color color.status.untracked red)
+    # changed=$(yadm config --get-color color.status.changed red)
+    # unmerged=$(yadm config --get-color color.status.unmerged red)
+    # untracked=$(yadm config --get-color color.status.untracked red)
     # NOTE: paths listed by 'yadm status -s --untracked=normal' mixed with quoted and unquoted style
     # remove indicators | remove original path for rename case | remove surrounding quotes
     extract="
@@ -73,22 +73,18 @@ foryadm::add() {
         sed -e 's/^\\\"//' -e 's/\\\"\$//'"
     preview="
         file=\$(echo {} | $extract)
-        if (yadm status -s -- \$file | grep '^??') &>/dev/null; then  # diff with /dev/null for untracked files
-            yadm diff --color=always --no-index -- /dev/null \$file | $foryadm_diff_pager | sed '2 s/added:/untracked:/'
-        else
-            yadm diff --color=always -- \$file | $foryadm_diff_pager
-        fi"
+        yadm diff --color=always -- \$file | $foryadm_diff_pager"
     opts="
         $FORYADM_FZF_DEFAULT_OPTS
         -0 -m --nth 2..,..
         $FORYADM_ADD_FZF_OPTS
     "
-    files=$(yadm -c color.status=always -c status.relativePaths=true status -s --untracked=normal |
-        grep -F -e "$changed" -e "$unmerged" -e "$untracked" |
+    files=$(yadm -c color.status=always -c status.relativePaths=true status -s |
+        # grep -F -e "$changed" -e "$unmerged" -e "$untracked" |
         sed -E 's/^(..[^[:space:]]*)[[:space:]]+(.*)$/[\1]  \2/' |
         FZF_DEFAULT_OPTS="$opts" fzf --preview="$preview" |
         sh -c "$extract")
-    [[ -n "$files" ]] && echo "$files" | tr '\n' '\0' | xargs -0 -I% yadm add % && yadm status -s --untracked=normal && return
+    [[ -n "$files" ]] && echo "$files" | tr '\n' '\0' | xargs -0 -I% yadm add % && yadm status -s && return
     echo 'Nothing to add.'
 }
 
