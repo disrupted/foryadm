@@ -18,7 +18,7 @@ foryadm_log_format=${FORYADM_LOG_FORMAT:-%C(auto)%h%d %s %C(black)%C(bold)%cr%Cr
 foryadm::log() {
     foryadm::inside_work_tree || return 1
     local cmd opts graph files
-    files=$(sed -nE 's/.* -- (.*)/\1/p' <<< "$*") # extract files parameters for `yadm show` command
+    files=$(sed -nE 's/.* -- (.*)/\1/p' <<<"$*") # extract files parameters for `yadm show` command
     cmd="echo {} |grep -Eo '[a-f0-9]+' |head -1 |xargs -I% yadm show --color=always % -- $files | $foryadm_show_pager"
     opts="
         $FORYADM_FZF_DEFAULT_OPTS
@@ -38,7 +38,7 @@ foryadm::diff() {
     foryadm::inside_work_tree || return 1
     local cmd files opts commit repo
     [[ $# -ne 0 ]] && {
-        if yadm rev-parse "$1" -- &>/dev/null ; then
+        if yadm rev-parse "$1" -- &>/dev/null; then
             commit="$1" && files=("${@:2}")
         else
             files=("$@")
@@ -88,7 +88,7 @@ foryadm::add() {
         sed -E 's/^(..[^[:space:]]*)[[:space:]]+(.*)$/[\1]  \2/' |
         FZF_DEFAULT_OPTS="$opts" fzf --preview="$preview" |
         sh -c "$extract")
-    [[ -n "$files" ]] && echo "$files"| tr '\n' '\0' |xargs -0 -I% yadm add % && yadm status -s --untracked=normal && return
+    [[ -n "$files" ]] && echo "$files" | tr '\n' '\0' | xargs -0 -I% yadm add % && yadm status -s --untracked=normal && return
     echo 'Nothing to add.'
 }
 
@@ -130,7 +130,7 @@ foryadm::clean() {
         $FORYADM_CLEAN_FZF_OPTS
     "
     # Note: Postfix '/' in directory path should be removed. Otherwise the directory itself will not be removed.
-    files=$(yadm clean -xdffn "$@"| sed 's/^Would remove //' | FZF_DEFAULT_OPTS="$opts" fzf |sed 's#/$##')
+    files=$(yadm clean -xdffn "$@" | sed 's/^Would remove //' | FZF_DEFAULT_OPTS="$opts" fzf | sed 's#/$##')
     [[ -n "$files" ]] && echo "$files" | tr '\n' '\0' | xargs -0 -I% yadm clean -xdff '%' && yadm status --short && return
     echo 'Nothing to clean.'
 }
@@ -156,7 +156,7 @@ foryadm::rebase() {
     graph=--graph
     [[ $FORYADM_LOG_GRAPH_ENABLE == false ]] && graph=
     cmd="yadm log $graph --color=always --format='$foryadm_log_format' $* $foryadm_emojify"
-    files=$(sed -nE 's/.* -- (.*)/\1/p' <<< "$*") # extract files parameters for `yadm show` command
+    files=$(sed -nE 's/.* -- (.*)/\1/p' <<<"$*") # extract files parameters for `yadm show` command
     preview="echo {} |grep -Eo '[a-f0-9]+' |head -1 |xargs -I% yadm show --color=always % -- $files | $foryadm_show_pager"
     opts="
         $FORYADM_FZF_DEFAULT_OPTS
@@ -176,7 +176,7 @@ foryadm::fixup() {
     graph=--graph
     [[ $FORYADM_LOG_GRAPH_ENABLE == false ]] && graph=
     cmd="yadm log $graph --color=always --format='$foryadm_log_format' $* $foryadm_emojify"
-    files=$(sed -nE 's/.* -- (.*)/\1/p' <<< "$*")
+    files=$(sed -nE 's/.* -- (.*)/\1/p' <<<"$*")
     preview="echo {} |grep -Eo '[a-f0-9]+' |head -1 |xargs -I% yadm show --color=always % -- $files | $foryadm_show_pager"
     opts="
         $FORYADM_FZF_DEFAULT_OPTS
@@ -203,7 +203,10 @@ foryadm::fixup() {
 # yadm checkout-file selector
 foryadm::checkout::file() {
     foryadm::inside_work_tree || return 1
-    [[ $# -ne 0 ]] && { yadm checkout -- "$@"; return $?; }
+    [[ $# -ne 0 ]] && {
+        yadm checkout -- "$@"
+        return $?
+    }
     local cmd files opts
     cmd="yadm diff --color=always -- {} | $foryadm_diff_pager"
     opts="
@@ -211,14 +214,17 @@ foryadm::checkout::file() {
         -m -0
         $FORYADM_CHECKOUT_FILE_FZF_OPTS
     "
-    files="$(yadm ls-files --modified "$(yadm rev-parse --show-toplevel)"| FZF_DEFAULT_OPTS="$opts" fzf --preview="$cmd")"
+    files="$(yadm ls-files --modified "$(yadm rev-parse --show-toplevel)" | FZF_DEFAULT_OPTS="$opts" fzf --preview="$cmd")"
     [[ -n "$files" ]] && echo "$files" | tr '\n' '\0' | xargs -0 -I% yadm checkout %
 }
 
 # yadm checkout-branch selector
 foryadm::checkout::branch() {
     foryadm::inside_work_tree || return 1
-    [[ $# -ne 0 ]] && { yadm checkout -b "$@"; return $?; }
+    [[ $# -ne 0 ]] && {
+        yadm checkout -b "$@"
+        return $?
+    }
     local cmd preview opts
     cmd="yadm branch --color=always --verbose --all --format=\"%(if:equals=HEAD)%(refname:strip=3)%(then)%(else)%(refname:short)%(end)\" $foryadm_emojify | sed '/^$/d'"
     preview="yadm log {} --graph --pretty=format:'$foryadm_log_format' --color=always --abbrev-commit --date=relative"
@@ -233,7 +239,10 @@ foryadm::checkout::branch() {
 # yadm checkout-commit selector
 foryadm::checkout::commit() {
     foryadm::inside_work_tree || return 1
-    [[ $# -ne 0 ]] && { yadm checkout "$@"; return $?; }
+    [[ $# -ne 0 ]] && {
+        yadm checkout "$@"
+        return $?
+    }
     local cmd opts graph
     cmd="echo {} |grep -Eo '[a-f0-9]+' |head -1 |xargs -I% yadm show --color=always % | $foryadm_show_pager"
     opts="
@@ -245,7 +254,7 @@ foryadm::checkout::commit() {
     graph=--graph
     [[ $FORYADM_LOG_GRAPH_ENABLE == false ]] && graph=
     eval "yadm log $graph --color=always --format='$foryadm_log_format' $foryadm_emojify" |
-        FZF_DEFAULT_OPTS="$opts" fzf --preview="$cmd" |grep -Eo '[a-f0-9]+' |head -1 |xargs -I% yadm checkout % --
+        FZF_DEFAULT_OPTS="$opts" fzf --preview="$cmd" | grep -Eo '[a-f0-9]+' | head -1 | xargs -I% yadm checkout % --
 }
 
 # yadm ignore generator
@@ -289,7 +298,7 @@ foryadm::ignore::get() {
     done
 }
 foryadm::ignore::list() {
-    find "$FORYADM_GI_TEMPLATES" -print |sed -e 's#.gitignore$##' -e 's#.*/##' | sort -fu
+    find "$FORYADM_GI_TEMPLATES" -print | sed -e 's#.gitignore$##' -e 's#.*/##' | sort -fu
 }
 foryadm::ignore::clean() {
     setopt localoptions rmstarsilent
